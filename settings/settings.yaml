@@ -1,6 +1,9 @@
 config:
-  default_file: config/config-stage.yaml
+  default_file: config/config-studio.yaml
 available_configs:
   - name: Default Configuration
     file: config/config.yaml
     description: Standard DMX Art-Net configuration
+  - name: test-config
+    file: config/test-config.yaml
+    description: 'Saved configuration: test-config'

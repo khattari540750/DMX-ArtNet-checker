@@ -18,7 +18,7 @@ interface ArtNetController {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 
 app.use(cors());
 app.use(express.json());
@@ -47,58 +47,92 @@ app.get('/api/config', (req, res) => {
       config: config
     });
   } catch (error) {
-    console.error('設定取得エラー:', error);
+    console.error('Configuration fetch error:', error);
     res.status(500).json({
       success: false,
-      message: '設定の取得に失敗しました',
+      message: 'Failed to fetch configuration',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
-// 設定を更新
+// Update configuration
 app.put('/api/config', (req, res) => {
   try {
-    const { config } = req.body;
+    const updates = req.body;
     
-    if (!config) {
+    if (!updates || Object.keys(updates).length === 0) {
       return res.status(400).json({
         success: false,
-        message: '設定データが提供されていません'
+        message: 'No update data provided'
       });
     }
 
-    const saved = configManager.saveConfig(config);
+    // Get current configuration
+    const currentConfig = configManager.getConfig();
+    if (!currentConfig) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to get current configuration'
+      });
+    }
+
+    // Partially update configuration
+    const updatedConfig = { ...currentConfig };
+    
+    // dmx.display_channels の更新を処理
+    if (updates.dmx && updates.dmx.display_channels) {
+      if (!updatedConfig.dmx) {
+        updatedConfig.dmx = {
+          display_channels: { start: 1, end: 16 }
+        };
+      }
+      if (!updatedConfig.dmx.display_channels) {
+        updatedConfig.dmx.display_channels = { start: 1, end: 16 };
+      }
+      
+      Object.assign(updatedConfig.dmx.display_channels, updates.dmx.display_channels);
+    }
+    
+    // その他の更新も処理
+    Object.keys(updates).forEach(key => {
+      if (key !== 'dmx') {
+        updatedConfig[key] = updates[key];
+      }
+    });
+
+    const saved = configManager.saveConfig(updatedConfig);
     
     if (saved) {
-      // Art-Net設定が変更された場合、コントローラー設定も更新
-      if (config.artnet) {
-        controller.config.ip = config.artnet.default_ip;
-        controller.config.port = config.artnet.default_port;
-        controller.config.universe = config.artnet.default_universe;
+      // Update controller configuration if Art-Net settings changed
+      if (updatedConfig.artnet) {
+        controller.config.ip = updatedConfig.artnet.default_ip;
+        controller.config.port = updatedConfig.artnet.default_port;
+        controller.config.universe = updatedConfig.artnet.default_universe;
       }
 
       res.json({
         success: true,
-        message: '設定が保存されました'
+        message: 'Configuration saved successfully',
+        config: updatedConfig
       });
     } else {
       res.status(500).json({
         success: false,
-        message: '設定の保存に失敗しました'
+        message: 'Failed to save configuration'
       });
     }
   } catch (error) {
-    console.error('設定保存エラー:', error);
+    console.error('Configuration save error:', error);
     res.status(500).json({
       success: false,
-      message: '設定の保存に失敗しました',
+      message: 'Failed to save configuration',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
-// 特定セクションの設定を更新
+// Update specific section configuration
 app.put('/api/config/:section', (req, res) => {
   try {
     const { section } = req.params;
@@ -107,7 +141,7 @@ app.put('/api/config/:section', (req, res) => {
     if (!data) {
       return res.status(400).json({
         success: false,
-        message: '設定データが提供されていません'
+        message: 'No configuration data provided'
       });
     }
 
@@ -121,14 +155,14 @@ app.put('/api/config/:section', (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        message: '設定の更新に失敗しました'
+        message: 'Failed to update configuration'
       });
     }
   } catch (error) {
     console.error('設定更新エラー:', error);
     res.status(500).json({
       success: false,
-      message: '設定の更新に失敗しました',
+      message: 'Failed to update configuration',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -150,7 +184,7 @@ app.get('/api/configs', (req, res) => {
     console.error('設定一覧取得エラー:', error);
     res.status(500).json({
       success: false,
-      message: '設定一覧の取得に失敗しました',
+      message: 'Failed to get configuration list',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -163,7 +197,7 @@ app.post('/api/config/reload', (req, res) => {
     const config = configManager.getConfig();
     res.json({
       success: true,
-      message: '設定を再読み込みしました',
+      message: 'Configuration reloaded successfully',
       config: config
     });
   } catch (error) {
@@ -304,6 +338,42 @@ app.post('/api/config/save-as', (req, res) => {
     res.status(500).json({
       success: false,
       message: '設定の保存に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 現在の設定ファイルに上書き保存
+app.post('/api/config/overwrite', (req, res) => {
+  try {
+    // 現在の設定を取得
+    const currentConfig = configManager.getConfig();
+    
+    // 現在の設定ファイルパスを取得
+    const settingsManager = configManager.getSettingsManager();
+    const currentSettings = settingsManager.getSettings();
+    const currentConfigPath = path.resolve('settings', currentSettings.config.default_file);
+    
+    // 設定ファイルを上書き保存
+    const yamlString = yaml.dump(currentConfig, {
+      indent: 2,
+      lineWidth: -1,
+      noRefs: true
+    });
+    
+    fs.writeFileSync(currentConfigPath, yamlString, 'utf8');
+
+    res.json({
+      success: true,
+      message: `設定を ${currentSettings.config.default_file} に上書き保存しました`,
+      file: currentSettings.config.default_file,
+      config: currentConfig
+    });
+  } catch (error) {
+    console.error('設定上書き保存エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の上書き保存に失敗しました',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -485,12 +555,12 @@ app.post('/api/artnet/channel', (req, res) => {
   }
 });
 
-// サーバー起動
+// Start server
 app.listen(PORT, () => {
-  console.log(`DMX Art-Net APIサーバーがポート ${PORT} で起動しました`);
+  console.log(`DMX Art-Net API server started on port ${PORT}`);
 });
 
-// プロセス終了時のクリーンアップ
+// Cleanup on process termination
 process.on('SIGTERM', () => {
   if (controller.client) {
     controller.client.close();

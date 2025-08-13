@@ -1,139 +1,302 @@
 # DMX Art-Net Checker
 
-A DMX signal testing application built with Vite + TypeScript + React + Node.js that sends DMX signals via Art-Net protocol.
+A comprehensive DMX signal testing application built with **Vite + TypeScript + React + Node.js** that sends DMX signals via Art-Net protocol. Features advanced configuration management, real-time channel control, and multiple configuration file support.
 
-## Features
+## 🚀 Features
 
-- **Real-time Control**: Manipulate DMX values in real-time with channel sliders
-- **Customizable**: Specify channel count from 1-512
-- **Art-Net Compatible**: Standard Art-Net protocol transmission
-- **Intuitive UI**: Visual control with horizontal sliders
-- **Batch Operations**: Bulk setting for all channels
+### Core Functionality
+- **Real-time DMX Control**: Manipulate DMX values with intuitive channel sliders
+- **Flexible Channel Range**: Set custom start/end channels (1-512) with Apply button
+- **Art-Net Protocol**: Standard Art-Net over Ethernet transmission
+- **Live Status Display**: Real-time connection status and configuration info
 
-## Tech Stack
+### Configuration Management
+- **Multiple Config Files**: Switch between different YAML configuration files
+- **Dynamic File Operations**: Save As, Overwrite, and Switch configurations
+- **YAML-based Settings**: Human-readable configuration format
+- **Environment Profiles**: Stage, Studio, and custom configuration variants
+
+### User Interface
+- **Responsive Design**: Modern, clean interface with organized sections
+- **Batch Operations**: Set all channels to max (255) or zero (0)
+- **Validation**: Real-time input validation with helpful error messages
+- **File Operations Panel**: Dedicated section for configuration management
+
+## 🛠 Tech Stack
 
 ### Frontend
-- **React 18** - User Interface
-- **TypeScript** - Type Safety
-- **Vite** - Fast Build Tool
-- **CSS3** - Responsive Design
+- **React 18** - Modern UI framework with hooks
+- **TypeScript** - Type-safe development
+- **Vite 5.4.19** - Lightning-fast build tool and dev server
+- **CSS3** - Responsive design with grid layouts
 
 ### Backend
-- **Node.js** - Server-side Runtime
-- **Express** - RESTful API
-- **Art-Net Library** - DMX-512 over Ethernet
+- **Node.js** - JavaScript runtime with ES modules
+- **Express** - RESTful API framework
+- **Art-Net 1.4.0** - DMX-512 over Ethernet protocol
+- **js-yaml 4.1.0** - YAML configuration parsing
 
-## Installation
+### Configuration System
+- **YAML Configuration Files** - Human-readable settings format
+- **Settings Manager** - Dynamic configuration discovery
+- **Config Manager** - File switching and saving operations
 
-1. Install dependencies:
+## 📦 Installation
+
+1. **Clone the repository:**
+```bash
+git clone https://github.com/khattari540750/DMX-ArtNet-checker.git
+cd DMX-ArtNet-checker
+```
+
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-## Usage
+## 🚀 Usage
 
 ### Development Mode
 Start both frontend and backend simultaneously:
 ```bash
-npm run start
+npm run dev    # Frontend (Vite)
+npm run server # Backend (Express) - in another terminal
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+**Access Points:**
+- **Frontend**: http://localhost:3002 (Vite dev server)
+- **Backend API**: http://localhost:3003 (Express server)
 
 ### Individual Startup
-Frontend only:
+**Frontend only:**
 ```bash
 npm run dev
 ```
 
-Backend only:
+**Backend only:**
+**Backend only:**
 ```bash
 npm run server
 ```
 
-## Application Usage
+## 🎛 Application Usage
 
-### 1. Connection Settings
-- **IP Address**: Art-Net device or broadcast address (e.g., 192.168.1.255)
-- **Universe**: DMX universe number (0-15)
-- **Channel Count**: Number of channels to display (1-512)
+### 1. Configuration Management
+#### Setting Up Configuration Files
+The application uses a YAML-based configuration system with multiple profiles:
 
-### 2. Art-Net Connection
-1. Configure IP address and universe
-2. Click "Connect" button
-3. Verify status shows "Connected"
+**Main Settings File:** `settings/settings.yaml`
+```yaml
+default_file: config/config-stage.yaml
+available_configs:
+  - config/config.yaml
+  - config/config-stage.yaml
+  - config/config-studio.yaml
+```
 
-### 3. DMX Control
-- **Individual Control**: Adjust each channel slider (0-255)
-- **Batch Control**: 
-  - "All Max (255)": Set all channels to 255
-  - "All Zero (0)": Set all channels to 0
+**Configuration Files:** Located in `settings/config/`
+- `config.yaml` - Default configuration
+- `config-stage.yaml` - Stage lighting setup
+- `config-studio.yaml` - Studio recording setup
 
-## API Endpoints
+#### Switching Configurations
+1. Use the **Config File dropdown** in the File Operations section
+2. Select desired configuration file
+3. Application automatically loads new settings
 
-### Connection Management
+#### Saving Configurations
+- **Save As**: Create new configuration file with custom name
+- **Overwrite Save**: Update current configuration file with current settings
+
+### 2. Channel Range Configuration
+#### Setting Channel Range
+1. **Start Channel**: Enter starting DMX channel (1-512)
+2. **End Channel**: Enter ending DMX channel (1-512)
+3. **Apply Range**: Click to apply the new channel range
+4. **Validation**: Real-time validation ensures start ≤ end
+
+#### Range Validation
+- Valid range: 1-512 channels
+- Start channel must be ≤ End channel
+- Visual feedback for invalid ranges
+
+### 3. Art-Net Connection
+#### Connection Setup
+1. **IP Address**: Enter Art-Net device IP or broadcast address
+2. **Universe**: Set DMX universe number (0-15)
+3. **Connect**: Click Connect button to establish connection
+4. **Status**: Monitor connection status in header
+
+#### Connection Settings
+- **Broadcast**: 192.168.1.255 (typical LAN broadcast)
+- **Direct**: Specific device IP address
+- **Universe**: DMX universe (0-15)
+
+### 4. DMX Channel Control
+#### Individual Channel Control
+- **Channel Sliders**: Adjust each channel value (0-255)
+- **Real-time Transmission**: Values sent immediately when connected
+- **Channel Labels**: Display as CH 1, CH 2, etc.
+
+#### Batch Operations
+- **Set All Max (255)**: Set all channels to maximum value
+- **Set All Zero (0)**: Reset all channels to zero
+- **Immediate Application**: Changes apply instantly when connected
+
+## 🔌 API Endpoints
+
+### Configuration Management
+- `GET /api/config` - Get current configuration
+- `PUT /api/config` - Update configuration
+- `GET /api/configs` - List available configuration files
+- `POST /api/config/switch` - Switch to different configuration file
+- `POST /api/config/save-as` - Save current configuration as new file
+- `POST /api/config/overwrite` - Overwrite current configuration file
+
+### Art-Net Connection
 - `POST /api/artnet/connect` - Establish Art-Net connection
-- `POST /api/artnet/disconnect` - Disconnect Art-Net
-- `GET /api/artnet/status` - Check connection status
+- `POST /api/artnet/disconnect` - Disconnect Art-Net connection
 
 ### DMX Control
 - `POST /api/artnet/send` - Send all channel data
-- `POST /api/artnet/channel` - Send individual channel data
+- `POST /api/artnet/channel` - Send individual channel value
 
-## Compatible Devices
+## 📁 Project Structure
 
-- Art-Net compatible lighting consoles
-- Art-Net to DMX converters
-- Art-Net compatible LED lights
-- Art-Net compatible software
+```
+DMX-ArtNet-checker/
+├── settings/                    # Configuration system
+│   ├── settings.yaml           # Main settings file
+│   └── config/                 # Configuration variants
+│       ├── config.yaml         # Default configuration
+│       ├── config-stage.yaml   # Stage lighting setup
+│       └── config-studio.yaml  # Studio setup
+├── src/                        # Frontend source
+│   ├── App.tsx                # Main React component
+│   ├── App.css                # Stylesheet
+│   └── main.tsx               # Application entry point
+├── server/                     # Backend source
+│   ├── index.ts               # Express API server
+│   ├── configManager.ts       # Configuration file management
+│   └── settingsManager.ts     # Settings discovery and loading
+├── package.json               # Dependencies and scripts
+├── tsconfig.json              # TypeScript configuration
+└── vite.config.ts            # Vite build configuration
+```
 
-## Troubleshooting
+## 🎨 Configuration Examples
+
+### Basic Configuration (config.yaml)
+```yaml
+artnet:
+  default_ip: "192.168.1.255"
+  default_port: 6454
+  default_universe: 0
+
+dmx:
+  display_channels:
+    start: 1
+    end: 16
+
+app:
+  name: "DMX Art-Net Checker"
+  version: "1.0.0"
+```
+
+### Stage Configuration (config-stage.yaml)
+```yaml
+artnet:
+  default_ip: "192.168.1.100"
+  default_port: 6454
+  default_universe: 1
+
+dmx:
+  display_channels:
+    start: 1
+    end: 32
+
+app:
+  name: "Stage Lighting Control"
+  description: "Configuration for stage lighting setup"
+```
+
+## 🔧 Compatible Devices
+
+- **Art-Net Lighting Consoles**: GrandMA, Chamsys MagicQ, etc.
+- **Art-Net to DMX Converters**: Enttec, DMXking, etc.
+- **Art-Net LED Fixtures**: RGBW strips, moving lights, etc.
+- **Art-Net Software**: MadMapper, Resolume, TouchDesigner, etc.
+
+## 🐛 Troubleshooting
 
 ### Connection Issues
-1. Check network settings
-2. Verify firewall configuration
-3. Confirm Art-Net device power and network connection
+1. **Network Configuration**:
+   - Ensure device is on same network segment
+   - Check firewall settings (Art-Net uses UDP port 6454)
+   - Verify subnet mask and broadcast address
 
-### DMX Signal Not Transmitting
-1. Verify correct universe number
-2. Ensure IP address is within device network segment
-3. Check browser developer tools for errors
+2. **Art-Net Device Issues**:
+   - Confirm device supports Art-Net protocol
+   - Check universe configuration matches
+   - Verify device is powered and network-connected
 
-## License
+### Configuration Problems
+1. **File Loading Issues**:
+   - Check YAML syntax validity
+   - Ensure file permissions are correct
+   - Verify file paths in settings.yaml
 
-MIT License
+2. **Channel Range Issues**:
+   - Confirm start ≤ end channel
+   - Check channels are within 1-512 range
+   - Use Apply Range button after changes
 
-## Developer Information
+### Performance Issues
+1. **High Channel Count**:
+   - Reduce channel range for better performance
+   - Consider using batch operations
+   - Monitor network traffic
 
-### Project Structure
-```
-├── src/                 # Frontend source
-│   ├── App.tsx         # Main React component
-│   ├── App.css         # Stylesheet
-│   └── main.tsx        # Application entry point
-├── server/             # Backend source
-│   └── index.ts        # Express API server
-├── package.json        # Dependencies and scripts
-└── tsconfig.json       # TypeScript configuration
-```
+## 🏗 Build and Development
 
-### Build
+### Build for Production
 ```bash
 npm run build
 ```
 
-### Lint
+### TypeScript Type Checking
+```bash
+npm run type-check
+```
+
+### Code Linting
 ```bash
 npm run lint
 ```
 
-## Contributing
+## 📜 License
 
-Pull requests and issue reports are welcome.
+MIT License - see LICENSE file for details
 
-## Notes
+## 🤝 Contributing
 
-- This application is designed for development and testing purposes
-- Please test thoroughly before using in production environments
-- Check DMX equipment specifications before use
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## 📝 Notes
+
+- **Development Use**: Primarily designed for testing and development
+- **Production Considerations**: Test thoroughly before production use
+- **Equipment Compatibility**: Verify DMX device specifications
+- **Network Security**: Consider network security when using broadcast addresses
+
+## 🆕 Recent Updates
+
+- ✅ **Apply Range Functionality**: Channel range changes require Apply button
+- ✅ **Configuration File Management**: Full YAML configuration system
+- ✅ **File Operations**: Save As, Overwrite, and Switch configurations
+- ✅ **English UI**: Complete interface localization
+- ✅ **Improved Validation**: Real-time input validation and error messages

@@ -9,7 +9,7 @@ artnet:
   default_universe: 0
 dmx:
   display_channels:
-    start: 135
+    start: 129
     end: 144
 logging:
   level: info

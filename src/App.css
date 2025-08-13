@@ -347,3 +347,12 @@
     flex-direction: column;
   }
 }
+
+/* バリデーションメッセージ */
+.validation-message {
+  font-size: 0.8rem;
+  color: #e74c3c;
+  margin-top: 0.25rem;
+  text-align: center;
+  font-style: italic;
+}

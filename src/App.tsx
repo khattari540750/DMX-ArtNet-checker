@@ -8,11 +8,18 @@ interface ArtNetConfig {
 }
 
 const App: React.FC = () => {
+  const API_BASE_URL = 'http://localhost:3003';
+  
   const [channelCount, setChannelCount] = useState<number>(16);
   const [channels, setChannels] = useState<number[]>(new Array(16).fill(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [channelStart, setChannelStart] = useState<number>(1);
   const [channelEnd, setChannelEnd] = useState<number>(16);
+  
+  // 一時的なチャンネル設定（Apply前）
+  const [tempChannelStart, setTempChannelStart] = useState<number>(1);
+  const [tempChannelEnd, setTempChannelEnd] = useState<number>(16);
+  
   const [availableConfigs, setAvailableConfigs] = useState<string[]>([]);
   const [currentConfig, setCurrentConfig] = useState<string>('config/config.yaml');
   const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
@@ -28,7 +35,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const response = await fetch('http://localhost:3002/api/config');
+        const response = await fetch(`${API_BASE_URL}/api/config`);
         if (response.ok) {
           const configData = await response.json();
           if (configData.success) {
@@ -39,10 +46,14 @@ const App: React.FC = () => {
             setChannelStart(start);
             setChannelEnd(end);
             setChannelCount(channelCount);
+            
+            // 一時変数も同期
+            setTempChannelStart(start);
+            setTempChannelEnd(end);
           }
         }
       } catch (error) {
-        console.error('設定の読み込みに失敗しました:', error);
+        console.error('Failed to load configuration:', error);
       }
     };
     
@@ -53,7 +64,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadAvailableConfigs = async () => {
       try {
-        const response = await fetch('http://localhost:3002/api/configs');
+        const response = await fetch(`${API_BASE_URL}/api/configs`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
@@ -62,7 +73,7 @@ const App: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('設定ファイル一覧の読み込みに失敗しました:', error);
+        console.error('Failed to load config file list:', error);
       }
     };
     
@@ -81,16 +92,19 @@ const App: React.FC = () => {
     });
   }, [channelCount]);
 
-  // チャンネル範囲が変更されたときの処理
-  const updateChannelRange = async (start: number, end: number) => {
+  // Apply channel range function (for Apply button)
+  const applyChannelRange = async () => {
+    const start = tempChannelStart;
+    const end = tempChannelEnd;
+    
     if (start < 1 || end > 512 || start > end) {
-      alert('チャンネル範囲が無効です (1-512, start ≤ end)');
+      alert('Invalid channel range (1-512, start ≤ end)');
       return;
     }
 
     try {
-      // 設定を更新
-      const response = await fetch('http://localhost:3002/api/config', {
+      // Update configuration
+      const response = await fetch(`${API_BASE_URL}/api/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -110,19 +124,25 @@ const App: React.FC = () => {
         setChannelEnd(end);
         const newChannelCount = end - start + 1;
         setChannelCount(newChannelCount);
+        
+        // Resize channel array
+        const newChannels = new Array(newChannelCount).fill(0);
+        setChannels(newChannels);
+        
+        alert('Channel range applied successfully');
       } else {
-        alert('設定の更新に失敗しました');
+        alert('Failed to update configuration');
       }
     } catch (error) {
-      console.error('設定更新エラー:', error);
-      alert('設定の更新に失敗しました');
+      console.error('Configuration update error:', error);
+      alert('Failed to update configuration');
     }
   };
 
   // 設定ファイルを切り替え
   const switchConfigFile = async (configFile: string) => {
     try {
-      const response = await fetch('http://localhost:3002/api/config/switch', {
+      const response = await fetch(`${API_BASE_URL}/api/config/switch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,28 +165,32 @@ const App: React.FC = () => {
           setChannelEnd(end);
           setChannelCount(channelCount);
           
-          alert(`設定ファイルを ${configFile} に切り替えました`);
+          // Sync temporary variables
+          setTempChannelStart(start);
+          setTempChannelEnd(end);
+          
+          alert(`Switched to config file: ${configFile}`);
         } else {
-          alert(`設定切り替えに失敗しました: ${data.message}`);
+          alert(`Failed to switch config: ${data.message}`);
         }
       } else {
-        alert('設定切り替えに失敗しました');
+        alert('Failed to switch configuration');
       }
     } catch (error) {
-      console.error('設定切り替えエラー:', error);
-      alert('設定切り替えに失敗しました');
+      console.error('Configuration switch error:', error);
+      alert('Failed to switch configuration');
     }
   };
 
-  // 設定を別名で保存
+  // Save configuration as new file
   const saveConfigAs = async () => {
     if (!saveAsName.trim()) {
-      alert('ファイル名を入力してください');
+      alert('Please enter a file name');
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:3002/api/config/save-as', {
+      const response = await fetch(`${API_BASE_URL}/api/config/save-as`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,13 +205,13 @@ const App: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          alert(`設定を ${data.file} として保存しました`);
+          alert(`Configuration saved as ${data.file}`);
           setShowSaveDialog(false);
           setSaveAsName('');
           setSaveAsDescription('');
           
-          // 利用可能な設定ファイル一覧を更新
-          const configResponse = await fetch('http://localhost:3002/api/configs');
+          // Update available config files list
+          const configResponse = await fetch(`${API_BASE_URL}/api/configs`);
           if (configResponse.ok) {
             const configData = await configResponse.json();
             if (configData.success) {
@@ -195,18 +219,49 @@ const App: React.FC = () => {
             }
           }
         } else {
-          alert(`保存に失敗しました: ${data.message}`);
+          alert(`Save failed: ${data.message}`);
         }
       } else {
-        alert('保存に失敗しました');
+        alert('Save failed');
       }
     } catch (error) {
-      console.error('保存エラー:', error);
-      alert('保存に失敗しました');
+      console.error('Save error:', error);
+      alert('Save failed');
     }
   };
 
-  // 特定のチャンネルの値を更新
+  // Overwrite current config file
+  const overwriteCurrentConfig = async () => {
+    const confirmed = window.confirm(`Overwrite current configuration to ${currentConfig}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/config/overwrite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert(`Configuration overwritten to ${data.file}`);
+        } else {
+          alert(`Overwrite failed: ${data.message}`);
+        }
+      } else {
+        alert('Overwrite failed');
+      }
+    } catch (error) {
+      console.error('Overwrite error:', error);
+      alert('Overwrite failed');
+    }
+  };
+
+  // Update specific channel value
   const updateChannel = (index: number, value: number) => {
     setChannels(prev => {
       const newChannels = [...prev];
@@ -220,10 +275,10 @@ const App: React.FC = () => {
     }
   };
 
-  // Art-Netデータ送信（実際のAPI呼び出し）
+  // Send Art-Net data (actual API call)
   const sendArtNetData = async (channel: number, value: number) => {
     try {
-      const response = await fetch('http://localhost:3002/api/artnet/channel', {
+      const response = await fetch(`${API_BASE_URL}/api/artnet/channel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,14 +290,14 @@ const App: React.FC = () => {
       
       const result = await response.json();
       if (!result.success) {
-        console.error('Art-Net送信エラー:', result.message);
+        console.error('Art-Net send error:', result.message);
       }
     } catch (error) {
-      console.error('Art-Net送信エラー:', error);
+      console.error('Art-Net send error:', error);
     }
   };
 
-  // 全チャンネルを最大値に設定
+  // Set all channels to maximum value
   const setAllMax = () => {
     const maxChannels = new Array(channelCount).fill(255);
     setChannels(maxChannels);
@@ -251,7 +306,7 @@ const App: React.FC = () => {
     }
   };
 
-  // 全チャンネルをゼロに設定
+  // Set all channels to zero
   const setAllZero = () => {
     const zeroChannels = new Array(channelCount).fill(0);
     setChannels(zeroChannels);
@@ -260,10 +315,10 @@ const App: React.FC = () => {
     }
   };
 
-  // 全チャンネルデータを送信
+  // Send all channel data
   const sendAllChannels = async (channelsData: number[]) => {
     try {
-      const response = await fetch('http://localhost:3002/api/artnet/send', {
+      const response = await fetch(`${API_BASE_URL}/api/artnet/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -285,8 +340,8 @@ const App: React.FC = () => {
   const toggleConnection = async () => {
     try {
       if (isConnected) {
-        // 切断
-        const response = await fetch('http://localhost:3002/api/artnet/disconnect', {
+        // Disconnect
+        const response = await fetch(`${API_BASE_URL}/api/artnet/disconnect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -295,11 +350,11 @@ const App: React.FC = () => {
         if (result.success) {
           setIsConnected(false);
         } else {
-          console.error('切断エラー:', result.message);
+          console.error('Disconnect error:', result.message);
         }
       } else {
-        // 接続
-        const response = await fetch('http://localhost:3002/api/artnet/connect', {
+        // Connect
+        const response = await fetch(`${API_BASE_URL}/api/artnet/connect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(config)
@@ -309,11 +364,11 @@ const App: React.FC = () => {
         if (result.success) {
           setIsConnected(true);
         } else {
-          console.error('接続エラー:', result.message);
+          console.error('Connect error:', result.message);
         }
       }
     } catch (error) {
-      console.error('接続エラー:', error);
+      console.error('Connection error:', error);
       setIsConnected(false);
     }
   };
@@ -321,43 +376,54 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <header className="header">
-        <h1 className="title">DMX Art-Net チェッカー</h1>
+        <h1 className="title">DMX Art-Net Checker</h1>
         
         <div className="controls">
           <div className="control-group">
-            <label>開始チャンネル:</label>
+            <label>Start Channel:</label>
             <input
               type="number"
               min="1"
               max="512"
-              value={channelStart}
+              value={tempChannelStart}
               onChange={(e) => {
                 const start = Math.max(1, Math.min(512, parseInt(e.target.value) || 1));
-                if (start <= channelEnd) {
-                  updateChannelRange(start, channelEnd);
-                }
+                setTempChannelStart(start);
               }}
             />
           </div>
           
           <div className="control-group">
-            <label>終了チャンネル:</label>
+            <label>End Channel:</label>
             <input
               type="number"
               min="1"
               max="512"
-              value={channelEnd}
+              value={tempChannelEnd}
               onChange={(e) => {
                 const end = Math.max(1, Math.min(512, parseInt(e.target.value) || 1));
-                if (channelStart <= end) {
-                  updateChannelRange(channelStart, end);
-                }
+                setTempChannelEnd(end);
               }}
             />
           </div>
           
           <div className="control-group">
-            <label>IP アドレス:</label>
+            <button 
+              className="action-button primary"
+              onClick={applyChannelRange}
+              disabled={tempChannelStart > tempChannelEnd || tempChannelStart < 1 || tempChannelEnd > 512}
+            >
+              Apply Range
+            </button>
+            {(tempChannelStart > tempChannelEnd || tempChannelStart < 1 || tempChannelEnd > 512) && (
+              <div className="validation-message">
+                Valid range: 1-512, start ≤ end
+              </div>
+            )}
+          </div>
+          
+          <div className="control-group">
+            <label>IP Address:</label>
             <input
               type="text"
               value={config.ip}
@@ -366,7 +432,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="control-group">
-            <label>ユニバース:</label>
+            <label>Universe:</label>
             <input
               type="number"
               min="0"
@@ -378,17 +444,17 @@ const App: React.FC = () => {
           
           <div className="control-group">
             <button onClick={toggleConnection}>
-              {isConnected ? '切断' : '接続'}
+              {isConnected ? 'Disconnect' : 'Connect'}
             </button>
           </div>
         </div>
 
-        {/* ファイル操作セクション */}
+        {/* File Operations Section */}
         <section className="file-operations">
-          <h2>ファイル操作</h2>
+          <h2>File Operations</h2>
           <div className="file-controls">
             <div className="control-group">
-              <label>設定ファイル:</label>
+              <label>Config File:</label>
               <select
                 value={currentConfig}
                 onChange={(e) => switchConfigFile(e.target.value)}
@@ -403,17 +469,26 @@ const App: React.FC = () => {
             
             <div className="control-group">
               <button 
+                className="action-button primary"
+                onClick={overwriteCurrentConfig}
+              >
+                Overwrite Save
+              </button>
+            </div>
+            
+            <div className="control-group">
+              <button 
                 className="action-button secondary"
                 onClick={() => setShowSaveDialog(true)}
               >
-                別名で保存
+                Save As
               </button>
             </div>
           </div>
         </section>
 
         <div className={`status ${isConnected ? 'connected' : 'disconnected'}`}>
-          ステータス: {isConnected ? `接続中 (${config.ip}:${config.port}, Universe ${config.universe})` : '切断中'}
+          Status: {isConnected ? `Connected (${config.ip}:${config.port}, Universe ${config.universe})` : 'Disconnected'}
         </div>
       </header>
 
@@ -437,21 +512,21 @@ const App: React.FC = () => {
 
         <div className="actions">
           <button className="action-button primary" onClick={setAllMax}>
-            全て最大 (255)
+            Set All Max (255)
           </button>
           <button className="action-button secondary" onClick={setAllZero}>
-            全てゼロ (0)
+            Set All Zero (0)
           </button>
         </div>
       </main>
 
-      {/* 別名保存ダイアログ */}
+      {/* Save As Dialog */}
       {showSaveDialog && (
         <div className="modal-overlay" onClick={() => setShowSaveDialog(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>設定を別名で保存</h3>
+            <h3>Save Configuration As</h3>
             <div className="form-group">
-              <label>ファイル名:</label>
+              <label>File Name:</label>
               <input
                 type="text"
                 value={saveAsName}
@@ -459,20 +534,20 @@ const App: React.FC = () => {
                 placeholder="config-new"
                 autoFocus
               />
-              <small>※ .yamlは自動で付与されます</small>
+              <small>※ .yaml will be added automatically</small>
             </div>
             <div className="form-group">
-              <label>説明 (オプション):</label>
+              <label>Description (Optional):</label>
               <input
                 type="text"
                 value={saveAsDescription}
                 onChange={(e) => setSaveAsDescription(e.target.value)}
-                placeholder="設定の説明を入力"
+                placeholder="Enter description for this configuration"
               />
             </div>
             <div className="modal-actions">
-              <button onClick={() => setShowSaveDialog(false)}>キャンセル</button>
-              <button onClick={saveConfigAs} className="primary">保存</button>
+              <button onClick={() => setShowSaveDialog(false)}>Cancel</button>
+              <button onClick={saveConfigAs} className="primary">Save</button>
             </div>
           </div>
         </div>
