@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import artnet from 'artnet';
+import ConfigManager from './configManager.ts';
+import type { AppConfig } from './configManager.ts';
 
 interface ArtNetController {
   client?: any;
@@ -18,15 +20,116 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Initialize configuration manager
+const configManager = new ConfigManager();
+const appConfig = configManager.loadConfig();
+
 const controller: ArtNetController = {
   client: null,
   isConnected: false,
   config: {
-    ip: '192.168.1.255',
-    port: 6454,
-    universe: 0
+    ip: appConfig.artnet.default_ip,
+    port: appConfig.artnet.default_port,
+    universe: appConfig.artnet.default_universe
   }
 };
+
+// 設定管理API
+// 設定全体を取得
+app.get('/api/config', (req, res) => {
+  try {
+    const config = configManager.getConfig();
+    res.json({
+      success: true,
+      config: config
+    });
+  } catch (error) {
+    console.error('設定取得エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の取得に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 設定を更新
+app.put('/api/config', (req, res) => {
+  try {
+    const { config } = req.body;
+    
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        message: '設定データが提供されていません'
+      });
+    }
+
+    const saved = configManager.saveConfig(config);
+    
+    if (saved) {
+      // Art-Net設定が変更された場合、コントローラー設定も更新
+      if (config.artnet) {
+        controller.config.ip = config.artnet.default_ip;
+        controller.config.port = config.artnet.default_port;
+        controller.config.universe = config.artnet.default_universe;
+      }
+
+      res.json({
+        success: true,
+        message: '設定が保存されました'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: '設定の保存に失敗しました'
+      });
+    }
+  } catch (error) {
+    console.error('設定保存エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の保存に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 特定セクションの設定を更新
+app.put('/api/config/:section', (req, res) => {
+  try {
+    const { section } = req.params;
+    const { data } = req.body;
+    
+    if (!data) {
+      return res.status(400).json({
+        success: false,
+        message: '設定データが提供されていません'
+      });
+    }
+
+    const updated = configManager.updateConfig(section as keyof AppConfig, data);
+    
+    if (updated) {
+      res.json({
+        success: true,
+        message: `${section}設定が更新されました`
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: '設定の更新に失敗しました'
+      });
+    }
+  } catch (error) {
+    console.error('設定更新エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の更新に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
 
 // Art-Net接続
 app.post('/api/artnet/connect', (req, res) => {
@@ -38,7 +141,7 @@ app.post('/api/artnet/connect', (req, res) => {
       controller.client.close();
     }
 
-    // 新しい接続を作成
+    // 新しい接続を作成 (タイムアウト: 5000ms)
     controller.client = artnet({
       host: ip || controller.config.ip,
       port: port || controller.config.port

@@ -11,11 +11,38 @@ const App: React.FC = () => {
   const [channelCount, setChannelCount] = useState<number>(16);
   const [channels, setChannels] = useState<number[]>(new Array(16).fill(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [channelStart, setChannelStart] = useState<number>(1);
+  const [channelEnd, setChannelEnd] = useState<number>(16);
   const [config, setConfig] = useState<ArtNetConfig>({
     ip: '192.168.1.255',
     port: 6454,
     universe: 0
   });
+
+  // 設定を読み込んで初期チャンネル数を設定
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+          const configData = await response.json();
+          if (configData.success) {
+            const start = configData.config.dmx.display_channels.start;
+            const end = configData.config.dmx.display_channels.end;
+            const channelCount = end - start + 1;
+            
+            setChannelStart(start);
+            setChannelEnd(end);
+            setChannelCount(channelCount);
+          }
+        }
+      } catch (error) {
+        console.error('設定の読み込みに失敗しました:', error);
+      }
+    };
+    
+    loadConfig();
+  }, []);
 
   // チャンネル数が変更されたときにチャンネル配列を更新
   useEffect(() => {
@@ -29,6 +56,44 @@ const App: React.FC = () => {
     });
   }, [channelCount]);
 
+  // チャンネル範囲が変更されたときの処理
+  const updateChannelRange = async (start: number, end: number) => {
+    if (start < 1 || end > 512 || start > end) {
+      alert('チャンネル範囲が無効です (1-512, start ≤ end)');
+      return;
+    }
+
+    try {
+      // 設定を更新
+      const response = await fetch('/api/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          dmx: {
+            display_channels: {
+              start: start,
+              end: end
+            }
+          }
+        }),
+      });
+
+      if (response.ok) {
+        setChannelStart(start);
+        setChannelEnd(end);
+        const newChannelCount = end - start + 1;
+        setChannelCount(newChannelCount);
+      } else {
+        alert('設定の更新に失敗しました');
+      }
+    } catch (error) {
+      console.error('設定更新エラー:', error);
+      alert('設定の更新に失敗しました');
+    }
+  };
+
   // 特定のチャンネルの値を更新
   const updateChannel = (index: number, value: number) => {
     setChannels(prev => {
@@ -39,7 +104,7 @@ const App: React.FC = () => {
 
     // Art-Net送信をシミュレート（実際の実装では backend API を呼び出し）
     if (isConnected) {
-      sendArtNetData(index, value);
+      sendArtNetData(channelStart + index, value);
     }
   };
 
@@ -148,13 +213,34 @@ const App: React.FC = () => {
         
         <div className="controls">
           <div className="control-group">
-            <label>チャンネル数:</label>
+            <label>開始チャンネル:</label>
             <input
               type="number"
               min="1"
               max="512"
-              value={channelCount}
-              onChange={(e) => setChannelCount(Math.max(1, Math.min(512, parseInt(e.target.value) || 1)))}
+              value={channelStart}
+              onChange={(e) => {
+                const start = Math.max(1, Math.min(512, parseInt(e.target.value) || 1));
+                if (start <= channelEnd) {
+                  updateChannelRange(start, channelEnd);
+                }
+              }}
+            />
+          </div>
+          
+          <div className="control-group">
+            <label>終了チャンネル:</label>
+            <input
+              type="number"
+              min="1"
+              max="512"
+              value={channelEnd}
+              onChange={(e) => {
+                const end = Math.max(1, Math.min(512, parseInt(e.target.value) || 1));
+                if (channelStart <= end) {
+                  updateChannelRange(channelStart, end);
+                }
+              }}
             />
           </div>
           
@@ -194,7 +280,7 @@ const App: React.FC = () => {
         <div className="channels-grid">
           {channels.map((value, index) => (
             <div key={index} className="channel-control">
-              <div className="channel-label">CH {index + 1}</div>
+              <div className="channel-label">CH {channelStart + index}</div>
               <input
                 type="range"
                 min="0"
