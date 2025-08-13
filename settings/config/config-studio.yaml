@@ -1,0 +1,32 @@
+# DMX Art-Net Checker Configuration - Studio Setup
+
+# Application Settings
+app:
+  name: "DMX Art-Net Checker - Studio"
+  
+# Window Settings
+window:
+  width: 1024
+  height: 768
+
+# Art-Net Connection Settings
+artnet:
+  # Default connection configuration
+  default_ip: "127.0.0.1"
+  default_port: 6454
+  default_universe: 0
+
+# DMX Channel Settings
+dmx:
+  # Channel display range
+  display_channels:
+    start: 129
+    end: 144
+
+# Logging Settings
+logging:
+  level: "info"  # debug, info, warn, error
+  file_logging: false
+  log_file: "dmx-studio.log"
+  max_file_size: "10MB"
+  max_files: 3

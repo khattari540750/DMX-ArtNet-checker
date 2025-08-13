@@ -1,0 +1,32 @@
+# DMX Art-Net Checker Configuration - Stage Setup
+
+# Application Settings
+app:
+  name: "DMX Art-Net Checker - Stage"
+  
+# Window Settings
+window:
+  width: 1600
+  height: 900
+
+# Art-Net Connection Settings
+artnet:
+  # Default connection configuration
+  default_ip: "192.168.10.255"
+  default_port: 6454
+  default_universe: 1
+
+# DMX Channel Settings
+dmx:
+  # Channel display range
+  display_channels:
+    start: 1
+    end: 32
+
+# Logging Settings
+logging:
+  level: "debug"  # debug, info, warn, error
+  file_logging: true
+  log_file: "dmx-stage.log"
+  max_file_size: "50MB"
+  max_files: 10

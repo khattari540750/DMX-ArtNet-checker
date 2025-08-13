@@ -1,0 +1,6 @@
+config:
+  default_file: config/config-stage.yaml
+available_configs:
+  - name: Default Configuration
+    file: config/config.yaml
+    description: Standard DMX Art-Net configuration

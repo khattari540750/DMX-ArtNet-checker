@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'js-yaml';
 import artnet from 'artnet';
 import ConfigManager from './configManager.ts';
 import type { AppConfig } from './configManager.ts';
@@ -15,7 +18,7 @@ interface ArtNetController {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 app.use(cors());
 app.use(express.json());
@@ -126,6 +129,181 @@ app.put('/api/config/:section', (req, res) => {
     res.status(500).json({
       success: false,
       message: '設定の更新に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 利用可能な設定ファイル一覧を取得
+app.get('/api/configs', (req, res) => {
+  try {
+    const settingsManager = configManager.getSettingsManager();
+    const availableFiles = settingsManager.getAvailableConfigFiles();
+    const currentSettings = settingsManager.getSettings();
+    
+    res.json({
+      success: true,
+      configs: availableFiles,
+      current: currentSettings.config.default_file
+    });
+  } catch (error) {
+    console.error('設定一覧取得エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定一覧の取得に失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 設定を再読み込み
+app.post('/api/config/reload', (req, res) => {
+  try {
+    configManager.reloadSettings();
+    const config = configManager.getConfig();
+    res.json({
+      success: true,
+      message: '設定を再読み込みしました',
+      config: config
+    });
+  } catch (error) {
+    console.error('設定再読み込みエラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の再読み込みに失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 設定ファイルを切り替え
+app.post('/api/config/switch', (req, res) => {
+  try {
+    const { configFile } = req.body;
+    
+    if (!configFile) {
+      return res.status(400).json({
+        success: false,
+        message: '設定ファイル名が指定されていません'
+      });
+    }
+
+    // settings.yamlを更新
+    const settingsManager = configManager.getSettingsManager();
+    const currentSettings = settingsManager.getSettings();
+    
+    const updatedSettings = {
+      ...currentSettings,
+      config: {
+        ...currentSettings.config,
+        default_file: configFile
+      }
+    };
+
+    const saved = settingsManager.saveSettings(updatedSettings);
+    if (!saved) {
+      return res.status(500).json({
+        success: false,
+        message: 'settings.yamlの更新に失敗しました'
+      });
+    }
+
+    // 設定を再読み込み
+    configManager.reloadSettings();
+    const newConfig = configManager.getConfig();
+
+    res.json({
+      success: true,
+      message: `設定ファイルを ${configFile} に切り替えました`,
+      config: newConfig
+    });
+  } catch (error) {
+    console.error('設定ファイル切り替えエラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定ファイルの切り替えに失敗しました',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// 現在の設定を別名で保存
+app.post('/api/config/save-as', (req, res) => {
+  try {
+    const { filename, name, description } = req.body;
+    
+    if (!filename || !filename.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'ファイル名が指定されていません'
+      });
+    }
+
+    // ファイル名の検証（危険な文字を除外）
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9\-_]/g, '');
+    if (!sanitizedFilename) {
+      return res.status(400).json({
+        success: false,
+        message: '無効なファイル名です'
+      });
+    }
+
+    const newConfigFile = `config/${sanitizedFilename}.yaml`;
+    const newConfigPath = path.resolve('settings', newConfigFile);
+    
+    // ファイルが既に存在するかチェック
+    if (fs.existsSync(newConfigPath)) {
+      return res.status(409).json({
+        success: false,
+        message: 'ファイルが既に存在します'
+      });
+    }
+
+    // 現在の設定を取得
+    const currentConfig = configManager.getConfig();
+    
+    // 設定ファイルを保存
+    const yamlString = yaml.dump(currentConfig, {
+      indent: 2,
+      lineWidth: -1,
+      noRefs: true
+    });
+    
+    const configDir = path.dirname(newConfigPath);
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+    
+    fs.writeFileSync(newConfigPath, yamlString, 'utf8');
+
+    // settings.yamlの利用可能な設定リストを更新
+    const settingsManager = configManager.getSettingsManager();
+    const currentSettings = settingsManager.getSettings();
+    
+    const newConfigEntry = {
+      name: name || sanitizedFilename,
+      file: newConfigFile,
+      description: description || `Saved configuration: ${sanitizedFilename}`
+    };
+
+    const updatedSettings = {
+      ...currentSettings,
+      available_configs: [...currentSettings.available_configs, newConfigEntry]
+    };
+
+    settingsManager.saveSettings(updatedSettings);
+
+    res.json({
+      success: true,
+      message: `設定を ${newConfigFile} として保存しました`,
+      file: newConfigFile,
+      config: currentConfig
+    });
+  } catch (error) {
+    console.error('設定別名保存エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '設定の保存に失敗しました',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

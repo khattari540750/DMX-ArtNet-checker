@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
+import SettingsManager from './settingsManager.ts';
 
 export interface AppConfig {
   app: {
@@ -33,9 +34,11 @@ export interface AppConfig {
 class ConfigManager {
   private config: AppConfig | null = null;
   private configPath: string;
+  private settingsManager: SettingsManager;
 
-  constructor(configPath: string = 'config.yaml') {
-    this.configPath = path.resolve(configPath);
+  constructor(settingsPath?: string) {
+    this.settingsManager = new SettingsManager(settingsPath);
+    this.configPath = this.settingsManager.getDefaultConfigPath();
   }
 
   /**
@@ -101,6 +104,29 @@ class ConfigManager {
   public getDefaultChannelCount(): number {
     const config = this.getConfig();
     return config.dmx.display_channels.end - config.dmx.display_channels.start + 1;
+  }
+
+  /**
+   * Reload settings and update config path
+   */
+  public reloadSettings(): void {
+    this.configPath = this.settingsManager.getDefaultConfigPath();
+    this.config = null; // Force reload of config on next access
+  }
+
+  /**
+   * Get available configuration files
+   */
+  public getAvailableConfigs() {
+    const settings = this.settingsManager.getSettings();
+    return settings.available_configs;
+  }
+
+  /**
+   * Get settings manager instance
+   */
+  public getSettingsManager(): SettingsManager {
+    return this.settingsManager;
   }
 
   /**
