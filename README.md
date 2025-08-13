@@ -1,124 +1,124 @@
-# DMX Art-Net チェッカー
+# DMX Art-Net Checker
 
-Vite + TypeScript + React + Node.js を使用したDMX信号をArt-Netで送信するチェックアプリです。
+A DMX signal testing application built with Vite + TypeScript + React + Node.js that sends DMX signals via Art-Net protocol.
 
-## 特徴
+## Features
 
-- **リアルタイム制御**: チャンネルスライダーでDMX値をリアルタイムに操作
-- **カスタマイズ可能**: チャンネル数を1-512で指定可能
-- **Art-Net対応**: 標準的なArt-Netプロトコルでの送信
-- **直感的なUI**: 縦型スライダーで視覚的に操作
-- **バッチ操作**: 全チャンネルの一括設定
+- **Real-time Control**: Manipulate DMX values in real-time with channel sliders
+- **Customizable**: Specify channel count from 1-512
+- **Art-Net Compatible**: Standard Art-Net protocol transmission
+- **Intuitive UI**: Visual control with horizontal sliders
+- **Batch Operations**: Bulk setting for all channels
 
-## 技術スタック
+## Tech Stack
 
-### フロントエンド
-- **React 18** - ユーザーインターフェース
-- **TypeScript** - 型安全性
-- **Vite** - 高速ビルドツール
-- **CSS3** - レスポンシブデザイン
+### Frontend
+- **React 18** - User Interface
+- **TypeScript** - Type Safety
+- **Vite** - Fast Build Tool
+- **CSS3** - Responsive Design
 
-### バックエンド
-- **Node.js** - サーバーサイド実行環境
+### Backend
+- **Node.js** - Server-side Runtime
 - **Express** - RESTful API
-- **Art-Net ライブラリ** - DMX-512 over Ethernet
+- **Art-Net Library** - DMX-512 over Ethernet
 
-## インストール
+## Installation
 
-1. 依存関係のインストール:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-## 使用方法
+## Usage
 
-### 開発モード
-フロントエンドとバックエンドを同時に起動:
+### Development Mode
+Start both frontend and backend simultaneously:
 ```bash
 npm run start
 ```
 
-- フロントエンド: http://localhost:3000
-- バックエンドAPI: http://localhost:3001
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
 
-### 個別起動
-フロントエンドのみ:
+### Individual Startup
+Frontend only:
 ```bash
 npm run dev
 ```
 
-バックエンドのみ:
+Backend only:
 ```bash
 npm run server
 ```
 
-## アプリケーションの使用方法
+## Application Usage
 
-### 1. 接続設定
-- **IPアドレス**: Art-Netデバイスまたはブロードキャストアドレス（例: 192.168.1.255）
-- **ユニバース**: DMXユニバース番号（0-15）
-- **チャンネル数**: 表示するチャンネル数（1-512）
+### 1. Connection Settings
+- **IP Address**: Art-Net device or broadcast address (e.g., 192.168.1.255)
+- **Universe**: DMX universe number (0-15)
+- **Channel Count**: Number of channels to display (1-512)
 
-### 2. Art-Net接続
-1. IPアドレスとユニバースを設定
-2. 「接続」ボタンをクリック
-3. ステータスが「接続中」に変わることを確認
+### 2. Art-Net Connection
+1. Configure IP address and universe
+2. Click "Connect" button
+3. Verify status shows "Connected"
 
-### 3. DMX制御
-- **個別制御**: 各チャンネルのスライダーで値を調整（0-255）
-- **一括制御**: 
-  - 「全て最大 (255)」: 全チャンネルを255に設定
-  - 「全てゼロ (0)」: 全チャンネルを0に設定
+### 3. DMX Control
+- **Individual Control**: Adjust each channel slider (0-255)
+- **Batch Control**: 
+  - "All Max (255)": Set all channels to 255
+  - "All Zero (0)": Set all channels to 0
 
-## API エンドポイント
+## API Endpoints
 
-### 接続管理
-- `POST /api/artnet/connect` - Art-Net接続
-- `POST /api/artnet/disconnect` - Art-Net切断
-- `GET /api/artnet/status` - 接続状態確認
+### Connection Management
+- `POST /api/artnet/connect` - Establish Art-Net connection
+- `POST /api/artnet/disconnect` - Disconnect Art-Net
+- `GET /api/artnet/status` - Check connection status
 
-### DMX制御
-- `POST /api/artnet/send` - 全チャンネルデータ送信
-- `POST /api/artnet/channel` - 個別チャンネル送信
+### DMX Control
+- `POST /api/artnet/send` - Send all channel data
+- `POST /api/artnet/channel` - Send individual channel data
 
-## 対応デバイス
+## Compatible Devices
 
-- Art-Net対応照明コンソール
-- Art-Net→DMX変換器
-- Art-Net対応LEDライト
-- Art-Net互換ソフトウェア
+- Art-Net compatible lighting consoles
+- Art-Net to DMX converters
+- Art-Net compatible LED lights
+- Art-Net compatible software
 
-## トラブルシューティング
+## Troubleshooting
 
-### 接続できない場合
-1. ネットワーク設定を確認
-2. ファイアウォール設定をチェック
-3. Art-Netデバイスの電源とネットワーク接続を確認
+### Connection Issues
+1. Check network settings
+2. Verify firewall configuration
+3. Confirm Art-Net device power and network connection
 
-### DMX信号が送信されない場合
-1. ユニバース番号が正しいか確認
-2. IPアドレスがデバイスのネットワークセグメントに含まれているか確認
-3. ブラウザの開発者ツールでエラーを確認
+### DMX Signal Not Transmitting
+1. Verify correct universe number
+2. Ensure IP address is within device network segment
+3. Check browser developer tools for errors
 
-## ライセンス
+## License
 
 MIT License
 
-## 開発者向け情報
+## Developer Information
 
-### プロジェクト構造
+### Project Structure
 ```
-├── src/                 # フロントエンドソース
-│   ├── App.tsx         # メインReactコンポーネント
-│   ├── App.css         # スタイルシート
-│   └── main.tsx        # アプリケーションエントリーポイント
-├── server/             # バックエンドソース
-│   └── index.ts        # Express APIサーバー
-├── package.json        # 依存関係とスクリプト
-└── tsconfig.json       # TypeScript設定
+├── src/                 # Frontend source
+│   ├── App.tsx         # Main React component
+│   ├── App.css         # Stylesheet
+│   └── main.tsx        # Application entry point
+├── server/             # Backend source
+│   └── index.ts        # Express API server
+├── package.json        # Dependencies and scripts
+└── tsconfig.json       # TypeScript configuration
 ```
 
-### ビルド
+### Build
 ```bash
 npm run build
 ```
@@ -128,12 +128,12 @@ npm run build
 npm run lint
 ```
 
-## 貢献
+## Contributing
 
-プルリクエストやイシューの報告は歓迎です。
+Pull requests and issue reports are welcome.
 
-## 注意事項
+## Notes
 
-- このアプリケーションは開発・テスト用途で設計されています
-- 本番環境での使用前に十分にテストしてください
-- DMX機器の仕様を確認してから使用してください
+- This application is designed for development and testing purposes
+- Please test thoroughly before using in production environments
+- Check DMX equipment specifications before use
