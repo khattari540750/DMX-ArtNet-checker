@@ -4,8 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import artnet from 'artnet';
-import ConfigManager from './configManager.ts';
-import type { AppConfig } from './configManager.ts';
+import ConfigManager from './configManager';
+import type { AppConfig } from './configManager';
 
 interface ArtNetController {
   client?: any;

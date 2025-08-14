@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run server:build && npm run copy-settings",
+    "copy-settings": "cp -r settings dist/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "server": "nodemon --exec ts-node server/index.ts",
-    "server:build": "tsc server/index.ts --outDir dist --target es2020 --module commonjs",
-    "start": "concurrently \"npm run server\" \"npm run dev\""
+    "server:build": "tsc --project tsconfig.server.json",
+    "start": "concurrently \"npm run server\" \"npm run dev\"",
+    "start:prod": "node dist/index.js"
   },
   "dependencies": {
     "artnet": "^1.4.0",
@@ -21,6 +23,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.24",

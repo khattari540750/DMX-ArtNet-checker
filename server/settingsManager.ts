@@ -17,8 +17,12 @@ class SettingsManager {
   private settings: SettingsConfig | null = null;
   private settingsPath: string;
 
-  constructor(settingsPath: string = 'settings/settings.yaml') {
-    this.settingsPath = path.resolve(settingsPath);
+  constructor(settingsPath?: string) {
+    // 本番環境かどうかを判定（distディレクトリから実行されているか）
+    const isProduction = __filename.includes('dist') || process.env.NODE_ENV === 'production';
+    const defaultPath = isProduction ? 'dist/settings/settings.yaml' : 'settings/settings.yaml';
+    
+    this.settingsPath = path.resolve(settingsPath || defaultPath);
   }
 
   /**
@@ -85,7 +89,9 @@ class SettingsManager {
    */
   public getDefaultConfigPath(): string {
     const settings = this.getSettings();
-    return path.resolve('settings', settings.config.default_file);
+    const isProduction = __filename.includes('dist') || process.env.NODE_ENV === 'production';
+    const settingsDir = isProduction ? 'dist/settings' : 'settings';
+    return path.resolve(settingsDir, settings.config.default_file);
   }
 
   /**
@@ -93,7 +99,8 @@ class SettingsManager {
    */
   public getAvailableConfigFiles(): string[] {
     try {
-      const configDir = path.resolve('settings/config');
+      const isProduction = __filename.includes('dist') || process.env.NODE_ENV === 'production';
+      const configDir = path.resolve(isProduction ? 'dist/settings/config' : 'settings/config');
       if (!fs.existsSync(configDir)) {
         return [];
       }

@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [channels, setChannels] = useState<number[]>(new Array(16).fill(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [channelStart, setChannelStart] = useState<number>(1);
+  // @ts-ignore
   const [channelEnd, setChannelEnd] = useState<number>(16);
   
   // 一時的なチャンネル設定（Apply前）
