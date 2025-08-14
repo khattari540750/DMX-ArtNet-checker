@@ -264,6 +264,46 @@ app:
 npm run build
 ```
 
+This command performs the following operations:
+1. **TypeScript Compilation**: Compiles frontend TypeScript files
+2. **Vite Build**: Builds optimized frontend assets
+3. **Server Build**: Compiles server TypeScript files to JavaScript
+4. **Settings Copy**: Copies `settings/` directory to `dist/settings/`
+
+The production build creates a `dist/` directory with the following structure:
+```
+dist/
+├── index.html                    # Frontend HTML entry point
+├── assets/                       # Optimized frontend assets (CSS, JS)
+├── index.js                      # Compiled server entry point
+├── configManager.js              # Configuration management module
+├── settingsManager.js            # Settings file management module
+└── settings/                     # Configuration files (copied from source)
+    ├── settings.yaml             # Main settings file
+    └── config/                   # Configuration variants
+        ├── config.yaml           # Default configuration
+        ├── config-stage.yaml     # Stage lighting setup
+        └── config-studio.yaml    # Studio setup
+```
+
+### Production Environment Settings
+The application automatically detects the environment and adjusts file paths accordingly:
+
+- **Development Mode**: Uses `settings/` directory in project root
+- **Production Mode**: Uses `dist/settings/` directory for all configuration files
+
+**Environment Detection Logic:**
+- Production mode is detected when the server is running from the `dist/` directory
+- Can also be forced by setting `NODE_ENV=production` environment variable
+
+### Running in Production
+```bash
+# After building
+npm run start:prod
+```
+
+This starts the compiled server from `dist/index.js` which will automatically use the configuration files from `dist/settings/`.
+
 ### TypeScript Type Checking
 ```bash
 npm run type-check
@@ -295,6 +335,9 @@ MIT License - see LICENSE file for details
 
 ## 🆕 Recent Updates
 
+- ✅ **Production Build Enhancement**: Automatic settings directory copy to dist/ during build
+- ✅ **Environment-aware Configuration**: Automatic path switching between development and production
+- ✅ **Improved Build Process**: Unified build command with server compilation and asset copying
 - ✅ **Apply Range Functionality**: Channel range changes require Apply button
 - ✅ **Configuration File Management**: Full YAML configuration system
 - ✅ **File Operations**: Save As, Overwrite, and Switch configurations

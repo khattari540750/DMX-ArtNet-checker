@@ -14,8 +14,6 @@ const App: React.FC = () => {
   const [channels, setChannels] = useState<number[]>(new Array(16).fill(0));
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [channelStart, setChannelStart] = useState<number>(1);
-  // @ts-ignore
-  const [channelEnd, setChannelEnd] = useState<number>(16);
   
   // 一時的なチャンネル設定（Apply前）
   const [tempChannelStart, setTempChannelStart] = useState<number>(1);
@@ -45,7 +43,6 @@ const App: React.FC = () => {
             const channelCount = end - start + 1;
             
             setChannelStart(start);
-            setChannelEnd(end);
             setChannelCount(channelCount);
             
             // 一時変数も同期
@@ -122,7 +119,6 @@ const App: React.FC = () => {
 
       if (response.ok) {
         setChannelStart(start);
-        setChannelEnd(end);
         const newChannelCount = end - start + 1;
         setChannelCount(newChannelCount);
         
@@ -163,7 +159,6 @@ const App: React.FC = () => {
           const channelCount = end - start + 1;
           
           setChannelStart(start);
-          setChannelEnd(end);
           setChannelCount(channelCount);
           
           // Sync temporary variables
